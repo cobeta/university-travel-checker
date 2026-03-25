@@ -1549,13 +1549,6 @@ function openRequestPage(advisories = []) {
     regionsEl.innerHTML = "";
   }
 
-  // Pre-fill form
-  document.getElementById("requestForm").style.display = "";
-  document.getElementById("rpConfirmation").style.display = "none";
-  document.getElementById("requestForm").reset();
-  document.getElementById("rp-destination").value = dest;
-  document.getElementById("rp-role-display").value = roleLabel;
-
   page.setAttribute("aria-hidden", "false");
   page.classList.add("open");
   document.querySelector(".rp-modal").scrollTop = 0;
@@ -1571,12 +1564,6 @@ function onModalBackdropClick(e) {
   if (e.target === document.getElementById("requestPage")) closeRequestPage();
 }
 
-function submitRequestForm(e) {
-  e.preventDefault();
-  document.getElementById("requestForm").style.display = "none";
-  document.getElementById("rpConfirmation").style.display = "block";
-  document.getElementById("requestPage").scrollTop = 0;
-}
 
 // ═══════════════════════════════════════════════
 //  INIT
