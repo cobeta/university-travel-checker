@@ -921,75 +921,8 @@ body{
       </div>
     </div>
 
-    <form class="rp-form" id="requestForm" onsubmit="submitRequestForm(event)">
-
-      <div class="rp-section-label">Traveller Information</div>
-      <div class="rp-field-row">
-        <div class="rp-field">
-          <label class="rp-label" for="rp-name">Full Name <span class="rp-required">*</span></label>
-          <input class="rp-input" type="text" id="rp-name" placeholder="First Last" required>
-        </div>
-        <div class="rp-field">
-          <label class="rp-label" for="rp-email">University Email <span class="rp-required">*</span></label>
-          <input class="rp-input" type="email" id="rp-email" placeholder="you@university.edu" required>
-        </div>
-      </div>
-      <div class="rp-field-row">
-        <div class="rp-field">
-          <label class="rp-label" for="rp-dept">Department / Unit <span class="rp-required">*</span></label>
-          <input class="rp-input" type="text" id="rp-dept" placeholder="e.g. Biology, Office of Research" required>
-        </div>
-        <div class="rp-field">
-          <label class="rp-label" for="rp-role-display">Traveller Type</label>
-          <input class="rp-input rp-readonly" type="text" id="rp-role-display" readonly>
-        </div>
-      </div>
-
-      <div class="rp-section-label">Travel Details</div>
-      <div class="rp-field">
-        <label class="rp-label" for="rp-destination">Destination <span class="rp-required">*</span></label>
-        <input class="rp-input rp-readonly" type="text" id="rp-destination" readonly>
-      </div>
-      <div class="rp-field-row">
-        <div class="rp-field">
-          <label class="rp-label" for="rp-depart">Departure Date <span class="rp-required">*</span></label>
-          <input class="rp-input" type="date" id="rp-depart" required>
-        </div>
-        <div class="rp-field">
-          <label class="rp-label" for="rp-return">Return Date <span class="rp-required">*</span></label>
-          <input class="rp-input" type="date" id="rp-return" required>
-        </div>
-      </div>
-      <div class="rp-field">
-        <label class="rp-label" for="rp-purpose">Purpose of Travel <span class="rp-required">*</span></label>
-        <select class="rp-input" id="rp-purpose" required>
-          <option value="" disabled selected>Select a purpose…</option>
-          <option>Conference / Symposium</option>
-          <option>Field Research</option>
-          <option>Study Abroad / Exchange</option>
-          <option>Clinical Rotation</option>
-          <option>Faculty-led Program</option>
-          <option>Administrative / University Business</option>
-          <option>Other</option>
-        </select>
-      </div>
-      <div class="rp-field">
-        <label class="rp-label" for="rp-notes">Additional Notes</label>
-        <textarea class="rp-input rp-textarea" id="rp-notes" placeholder="Briefly describe the nature of your travel, any known risk factors, or relevant context…" rows="4"></textarea>
-      </div>
-
-      <div class="rp-form-footer">
-        <p class="rp-footer-note">By submitting, you confirm the information above is accurate. The Office of Risk Management will review your request within 3–5 business days.</p>
-        <button type="submit" class="rp-submit-btn">Submit Request</button>
-      </div>
-    </form>
-
-    <!-- Confirmation screen (hidden until submitted) -->
-    <div class="rp-confirmation" id="rpConfirmation" style="display:none">
-      <div class="rp-confirm-icon">✓</div>
-      <div class="rp-confirm-title">Request Submitted</div>
-      <div class="rp-confirm-body">Your travel authorization request has been received. You will be contacted at your university email within 3–5 business days.</div>
-      <button class="rp-close-btn rp-confirm-back" onclick="closeRequestPage()">✕</button>
+    <div class="rp-actions">
+      <button class="rp-submit-btn" onclick="closeRequestPage()">View Travel Requirements</button>
     </div>
   </div><!-- /.rp-modal -->
   </div>
