@@ -47,8 +47,11 @@ body{
   border-bottom:3px solid var(--green);
   position:sticky;top:0;z-index:1000;
 }
-.seal{
-  width:44px;height:44px;flex-shrink:0;
+.header-circle{
+  width:36px;height:36px;flex-shrink:0;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,0.35);
+  background:rgba(255,255,255,0.08);
 }
 .header-text{}
 .header-title{
@@ -536,53 +539,72 @@ body{
 .leaflet-control-attribution{font-size:9px!important}
 
 /* ══════════════════════════════════════════════
-   REQUEST FORM PAGE
+   REQUEST FORM MODAL
 ══════════════════════════════════════════════ */
 .request-page{
   position:fixed;
   inset:0;
-  background:var(--cream);
+  background:rgba(0,0,0,0.45);
   z-index:2000;
-  overflow-y:auto;
-  transform:translateX(100%);
-  transition:transform .35s cubic-bezier(0.4,0,0.2,1);
-  visibility:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:1.5rem;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s ease;
 }
 .request-page.open{
-  transform:translateX(0);
-  visibility:visible;
+  opacity:1;
+  pointer-events:all;
+}
+.request-page.open .rp-modal{
+  transform:translateY(0);
+  opacity:1;
+}
+.rp-modal{
+  background:var(--cream);
+  border-radius:14px;
+  width:100%;
+  max-width:680px;
+  max-height:90vh;
+  overflow-y:auto;
+  position:relative;
+  transform:translateY(20px);
+  opacity:0;
+  transition:transform .3s cubic-bezier(0.22,1,0.36,1), opacity .25s ease;
+  box-shadow:0 24px 64px rgba(0,0,0,0.22);
 }
 
 .rp-header{
   background:var(--green-dark);
-  padding:1rem 2rem;
+  padding:1rem 1.25rem 1rem 1.5rem;
   display:flex;
   align-items:center;
-  gap:1.5rem;
+  justify-content:space-between;
+  border-radius:14px 14px 0 0;
   position:sticky;top:0;z-index:10;
   border-bottom:3px solid var(--green);
 }
-.rp-back-btn{
+.rp-close-btn{
   background:rgba(255,255,255,0.12);
   border:1px solid rgba(255,255,255,0.25);
   color:#fff;
-  border-radius:7px;
-  padding:0.45rem 0.9rem;
-  font-family:"Source Sans 3",sans-serif;
-  font-size:0.82rem;
-  font-weight:500;
+  border-radius:50%;
+  width:32px;height:32px;
+  font-size:1rem;
   cursor:pointer;
-  display:flex;align-items:center;gap:0.45rem;
-  white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;
   flex-shrink:0;
   transition:background .15s;
+  line-height:1;
 }
-.rp-back-btn:hover{background:rgba(255,255,255,0.2)}
+.rp-close-btn:hover{background:rgba(255,255,255,0.25)}
 .rp-header-title{}
 .rp-title{
   font-family:"DM Serif Display",serif;
   color:#fff;
-  font-size:1.15rem;
+  font-size:1.1rem;
   line-height:1.2;
 }
 .rp-subtitle{
@@ -768,22 +790,16 @@ body{
   line-height:1.6;
 }
 .rp-confirm-back{
-  background:var(--green);
-  border-color:transparent;
-  padding:0.6rem 1.4rem;
+  width:36px;height:36px;
+  margin:0 auto;
+  display:flex;
 }
 </style>
 </head>
 <body>
 
 <header class="site-header">
-  <svg class="seal" viewBox="0 0 44 44" fill="none">
-    <circle cx="22" cy="22" r="20" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-    <circle cx="22" cy="22" r="17" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-    <text x="22" y="28" text-anchor="middle" font-family="DM Serif Display,serif" font-size="16" fill="white" font-weight="bold">D</text>
-    <path d="M10 33 Q22 36 34 33" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
-    <path d="M10 11 Q22 8 34 11" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
-  </svg>
+  <div class="header-circle"></div>
   <div class="header-text">
     <div class="header-title">Travel Destination Checker</div>
     <div class="header-subtitle">Pre-Travel Authorization Review System</div>
@@ -879,16 +895,14 @@ body{
 <!-- ══════════════════════════════════════════════
      TRAVEL REQUEST FORM PAGE
 ════════════════════════════════════════════════ -->
-<div id="requestPage" class="request-page" aria-hidden="true">
+<div id="requestPage" class="request-page" aria-hidden="true" onclick="onModalBackdropClick(event)">
+  <div class="rp-modal">
   <div class="rp-header">
-    <button class="rp-back-btn" onclick="closeRequestPage()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      Back to checker
-    </button>
     <div class="rp-header-title">
       <div class="rp-title">Pre-Travel Authorization Request</div>
       <div class="rp-subtitle">Complete this form to submit a travel request for review.</div>
     </div>
+    <button class="rp-close-btn" onclick="closeRequestPage()" title="Close">✕</button>
   </div>
 
   <div class="rp-body">
@@ -975,8 +989,9 @@ body{
       <div class="rp-confirm-icon">✓</div>
       <div class="rp-confirm-title">Request Submitted</div>
       <div class="rp-confirm-body">Your travel authorization request has been received. You will be contacted at your university email within 3–5 business days.</div>
-      <button class="rp-back-btn rp-confirm-back" onclick="closeRequestPage()">← Return to checker</button>
+      <button class="rp-close-btn rp-confirm-back" onclick="closeRequestPage()">✕</button>
     </div>
+  </div><!-- /.rp-modal -->
   </div>
 </div>
 
@@ -1610,15 +1625,17 @@ function openRequestPage(advisories = []) {
 
   page.setAttribute("aria-hidden", "false");
   page.classList.add("open");
-  page.scrollTop = 0;
-  document.body.style.overflow = "hidden";
+  document.querySelector(".rp-modal").scrollTop = 0;
 }
 
 function closeRequestPage() {
   const page = document.getElementById("requestPage");
   page.classList.remove("open");
   page.setAttribute("aria-hidden","true");
-  document.body.style.overflow = "";
+}
+
+function onModalBackdropClick(e) {
+  if (e.target === document.getElementById("requestPage")) closeRequestPage();
 }
 
 function submitRequestForm(e) {
