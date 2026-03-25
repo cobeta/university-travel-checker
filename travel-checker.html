@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Destination Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --green:#00693E;
+  --green-dark:#004d2e;
+  --green-mid:#005a36;
+  --green-light:#e6f2ec;
+  --green-pale:#f0f8f4;
+  --cream:#F9F6F0;
+  --cream-dark:#f0ebe0;
+  --red:#C41230;
+  --amber:#996600;
+  --amber-bg:#fdf6e3;
+  --text:#1a1a1a;
+  --text-muted:#6b6b6b;
+  --border:#d8d0c4;
+  --shadow:rgba(0,0,0,0.08);
+  --white:#ffffff;
+}
+
+html{height:100%;font-size:16px}
+body{
+  font-family:"Source Sans 3",sans-serif;
+  background:var(--cream);
+  color:var(--text);
+  min-height:100vh;
+  line-height:1.6;
+}
+
+/* ── HEADER ── */
+.site-header{
+  background:var(--green-dark);
+  padding:0 2rem;
+  display:flex;
+  align-items:center;
+  gap:1.25rem;
+  height:68px;
+  border-bottom:3px solid var(--green);
+  position:sticky;top:0;z-index:1000;
+}
+.seal{
+  width:44px;height:44px;flex-shrink:0;
+}
+.header-text{}
+.header-title{
+  font-family:"DM Serif Display",serif;
+  color:#fff;
+  font-size:1.2rem;
+  letter-spacing:0.02em;
+  line-height:1.2;
+}
+.header-subtitle{
+  color:rgba(255,255,255,0.65);
+  font-size:0.78rem;
+  font-weight:300;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+}
+
+/* ── LAYOUT ── */
+.app-wrapper{
+  max-width:1200px;
+  margin:0 auto;
+  padding:2rem 1.5rem 3rem;
+}
+
+.app-grid{
+  display:grid;
+  grid-template-columns:420px 1fr;
+  gap:2rem;
+  align-items:start;
+}
+@media(max-width:900px){
+  .app-grid{grid-template-columns:1fr}
+}
+
+/* ── SECTION LABELS ── */
+.step-label{
+  font-family:"DM Serif Display",serif;
+  font-size:1.1rem;
+  color:var(--green-dark);
+  margin-bottom:0.75rem;
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+}
+.step-num{
+  background:var(--green);
+  color:#fff;
+  width:22px;height:22px;
+  border-radius:50%;
+  font-family:"Source Sans 3",sans-serif;
+  font-size:0.72rem;
+  font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+
+/* ── ROLE CARDS ── */
+.role-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0.75rem;
+  margin-bottom:1.75rem;
+}
+.role-card{
+  background:var(--white);
+  border:2px solid var(--border);
+  border-radius:10px;
+  padding:1rem 0.75rem;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s ease;
+  user-select:none;
+}
+.role-card:hover{
+  border-color:var(--green);
+  background:var(--green-pale);
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px var(--shadow);
+}
+.role-card.active{
+  border-color:var(--green);
+  background:var(--green-light);
+  box-shadow:0 0 0 3px rgba(0,105,62,0.15);
+}
+.role-icon{
+  font-size:1.8rem;
+  margin-bottom:0.3rem;
+  display:block;
+}
+.role-name{
+  font-weight:600;
+  font-size:0.85rem;
+  color:var(--green-dark);
+  line-height:1.2;
+}
+.role-desc{
+  font-size:0.72rem;
+  color:var(--text-muted);
+  margin-top:0.2rem;
+}
+.role-card.active .role-name{color:var(--green)}
+
+/* ── SEARCH ── */
+.search-section{margin-bottom:1.5rem;position:relative;}
+.search-wrapper{
+  display:flex;
+  gap:0;
+  border:2px solid var(--border);
+  border-radius:10px;
+  background:var(--white);
+  overflow:visible;
+  transition:border-color .2s;
+  position:relative;
+}
+.search-wrapper:focus-within{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(0,105,62,0.12);
+}
+.search-icon{
+  display:flex;align-items:center;justify-content:center;
+  padding:0 0.9rem;
+  color:var(--text-muted);
+  pointer-events:none;
+}
+#destinationInput{
+  flex:1;
+  border:none;outline:none;
+  font-family:"Source Sans 3",sans-serif;
+  font-size:0.95rem;
+  padding:0.75rem 0.5rem;
+  background:transparent;
+  color:var(--text);
+}
+#destinationInput::placeholder{color:#aaa}
+.clear-btn{
+  background:none;border:none;
+  padding:0 0.9rem;
+  cursor:pointer;
+  color:var(--text-muted);
+  font-size:1.1rem;
+  display:none;
+  align-items:center;
+  transition:color .15s;
+}
+.clear-btn:hover{color:var(--red)}
+.clear-btn.visible{display:flex}
+
+.search-hint{
+  font-size:0.78rem;
+  color:var(--text-muted);
+  margin-top:0.4rem;
+  padding-left:0.25rem;
+}
+
+/* ── AUTOCOMPLETE DROPDOWN ── */
+.autocomplete-dropdown{
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;right:0;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.12);
+  z-index:500;
+  overflow:hidden;
+  display:none;
+}
+.autocomplete-dropdown.open{display:block}
+.autocomplete-item{
+  padding:0.65rem 1rem;
+  font-size:0.88rem;
+  cursor:pointer;
+  border-bottom:1px solid #f0ece4;
+  transition:background .12s;
+  line-height:1.35;
+}
+.autocomplete-item:last-child{border-bottom:none}
+.autocomplete-item:hover,.autocomplete-item.focused{background:var(--green-pale)}
+.autocomplete-item .place-name{font-weight:600;color:var(--text)}
+.autocomplete-item .place-detail{color:var(--text-muted);font-size:0.78rem}
+.autocomplete-item.loading{
+  color:var(--text-muted);
+  font-style:italic;
+  cursor:default;
+  pointer-events:none;
+}
+
+/* ── STATUS CARD ── */
+.status-card{
+  margin-bottom:1.5rem;
+  display:none;
+}
+
+/* ── OK STATE: calm, understated ── */
+.status-card.ok{
+  display:block;
+  background:var(--green-light);
+  border-left:5px solid var(--green);
+  border-radius:10px;
+  padding:1.1rem 1.4rem;
+  animation:slideIn .3s ease;
+}
+@keyframes slideIn{
+  from{opacity:0;transform:translateY(-8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.status-card.ok .status-icon{font-size:1.3rem;margin-bottom:0.25rem}
+.status-card.ok .status-title{
+  font-family:"DM Serif Display",serif;
+  font-size:1.05rem;
+  color:var(--green-dark);
+  margin-bottom:0.2rem;
+}
+.status-card.ok .status-body{font-size:0.85rem;color:var(--text-muted)}
+
+/* ── LOADING STATE ── */
+.status-card.loading{
+  display:block;
+  background:#f5f5f5;
+  border-left:4px solid #ccc;
+  border-radius:10px;
+  padding:1.1rem 1.4rem;
+}
+.status-card.loading .status-title{
+  font-size:0.95rem;color:var(--text-muted);
+}
+.status-body{font-size:0.88rem;color:var(--text-muted)}
+
+/* ── REQUEST STATE: authoritative amber warning ── */
+.status-card.request{
+  display:block;
+  background:#fffbeb;
+  border:1.5px solid #d97706;
+  border-left:6px solid #b45309;
+  border-radius:10px;
+  padding:0;
+  overflow:hidden;
+  animation:alertIn .4s cubic-bezier(0.22,1,0.36,1) both;
+  box-shadow:0 4px 24px rgba(180,83,9,0.14),0 1px 4px rgba(0,0,0,0.06);
+}
+@keyframes alertIn{
+  0%{opacity:0;transform:translateY(-10px) scale(0.97)}
+  65%{transform:translateY(2px) scale(1.005)}
+  100%{opacity:1;transform:none}
+}
+/* amber band at top */
+.request-band{
+  background:#b45309;
+  padding:0.38rem 1.1rem;
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+}
+.request-band-icon{font-size:0.85rem;line-height:1;animation:bandPop .5s ease .1s both}
+@keyframes bandPop{
+  0%{opacity:0;transform:scale(0.5)}
+  70%{transform:scale(1.2)}
+  100%{opacity:1;transform:scale(1)}
+}
+.request-band-label{
+  font-size:0.65rem;
+  font-weight:700;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:#fff;
+  opacity:0.95;
+}
+/* inner content */
+.request-inner{
+  padding:1rem 1.1rem 1.05rem;
+}
+.request-headline{
+  font-family:"DM Serif Display",serif;
+  font-size:1.25rem;
+  line-height:1.2;
+  color:#7c2d12;
+  margin-bottom:0.3rem;
+  animation:fadeUp .35s ease .15s both;
+}
+.request-body{
+  font-size:0.84rem;
+  color:#92400e;
+  line-height:1.5;
+  animation:fadeUp .35s ease .25s both;
+  margin-bottom:0.85rem;
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ── REGIONAL STATE ── */
+.status-card.regional{
+  display:block;
+  background:#fffdf5;
+  border:1.5px solid #d97706;
+  border-left:6px solid #d97706;
+  border-radius:10px;
+  padding:0;
+  overflow:hidden;
+  animation:alertIn .4s cubic-bezier(0.22,1,0.36,1) both;
+  box-shadow:0 4px 20px rgba(217,119,6,0.1),0 1px 4px rgba(0,0,0,0.05);
+}
+.regional-band{
+  background:#d97706;
+  padding:0.38rem 1.1rem;
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+}
+.regional-band-icon{font-size:0.75rem;line-height:1;color:#fff;opacity:0.9}
+.regional-band-label{
+  font-size:0.65rem;
+  font-weight:700;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:#fff;
+}
+.regional-inner{padding:1rem 1.1rem 1.05rem}
+.regional-headline{
+  font-family:"DM Serif Display",serif;
+  font-size:1.1rem;
+  color:#7c2d12;
+  margin-bottom:0.3rem;
+  animation:fadeUp .35s ease .1s both;
+}
+.regional-body{
+  font-size:0.84rem;
+  color:#92400e;
+  line-height:1.5;
+  animation:fadeUp .35s ease .2s both;
+}
+
+/* ── ADVISORIES ── */
+.advisories{margin-bottom:1.5rem;display:none}
+.advisories.visible{display:block}
+.advisory-item{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-left:4px solid var(--amber);
+  border-radius:8px;
+  padding:0.9rem 1rem;
+  margin-bottom:0.6rem;
+  font-size:0.84rem;
+}
+.advisory-item.proximity{border-left-color:#5b8fc9}
+
+/* confirmed — destination verified inside restricted region */
+.advisory-item.adv-confirmed{
+  border-left-color:#b45309;
+  background:#fff7ed;
+}
+/* verifying — Overpass still in flight */
+.advisory-item.adv-verifying{
+  border-left-color:#d1c27a;
+  background:#fefce8;
+  opacity:0.85;
+}
+/* unverified — Overpass returned, no match found */
+.advisory-item.adv-unverified{
+  border-left-color:#c9c0b0;
+  background:var(--cream);
+}
+
+.advisory-tag{
+  font-weight:700;
+  font-size:0.68rem;
+  text-transform:uppercase;
+  letter-spacing:0.07em;
+  margin-bottom:0.3rem;
+}
+.adv-confirmed .advisory-tag{color:#b45309}
+.adv-verifying .advisory-tag{color:#a09020;display:flex;align-items:center;gap:0.4rem}
+.adv-unverified .advisory-tag{color:#888}
+.advisory-item.proximity .advisory-tag{color:#2e6fa3}
+.advisory-body{color:var(--text-muted);line-height:1.45;font-size:0.83rem}
+
+/* tiny inline spinner for verifying state */
+.spinner-xs{
+  display:inline-block;
+  width:10px;height:10px;
+  border:1.5px solid rgba(160,144,32,0.3);
+  border-top-color:#a09020;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  flex-shrink:0;
+}
+
+/* ── NO ROLE WARNING ── */
+.no-role-hint{
+  background:#fff8f0;
+  border:1px solid #f0d0a0;
+  border-radius:8px;
+  padding:0.75rem 1rem;
+  font-size:0.85rem;
+  color:#7a5010;
+  display:none;
+  margin-bottom:1rem;
+}
+.no-role-hint.visible{display:block}
+
+/* ── MAP PANEL ── */
+.map-panel{
+  position:sticky;
+  top:84px;
+}
+.map-label{
+  font-family:"DM Serif Display",serif;
+  font-size:1.05rem;
+  color:var(--green-dark);
+  margin-bottom:0.6rem;
+  display:flex;align-items:center;gap:0.4rem;
+}
+.map-label small{
+  font-family:"Source Sans 3",sans-serif;
+  font-size:0.75rem;
+  color:var(--text-muted);
+  font-weight:400;
+}
+#map{
+  height:520px;
+  border-radius:12px;
+  border:2px solid var(--border);
+  box-shadow:0 4px 20px var(--shadow);
+  overflow:hidden;
+}
+@media(max-width:900px){
+  #map{height:360px;position:static}
+  .map-panel{position:static}
+}
+
+/* ── DESTINATION DISPLAY ── */
+.dest-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:0.4rem;
+  background:var(--green-light);
+  color:var(--green-dark);
+  border:1px solid rgba(0,105,62,0.3);
+  border-radius:20px;
+  padding:0.35rem 0.85rem;
+  font-size:0.82rem;
+  font-weight:500;
+  margin-top:0.5rem;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  display:none;
+}
+.dest-chip.visible{display:inline-flex}
+.dest-chip svg{flex-shrink:0}
+
+/* ── LOADING SPINNER ── */
+.spinner{
+  width:18px;height:18px;
+  border:2px solid rgba(0,105,62,0.3);
+  border-top-color:var(--green);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  display:inline-block;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PANEL HEADING ── */
+.panel-heading{
+  margin-bottom:1.75rem;
+  padding-bottom:1.25rem;
+  border-bottom:1px solid var(--border);
+}
+.panel-title{
+  font-family:"DM Serif Display",serif;
+  font-size:1.55rem;
+  color:var(--green-dark);
+  margin-bottom:0.3rem;
+}
+.panel-subtitle{
+  font-size:0.85rem;
+  color:var(--text-muted);
+  line-height:1.5;
+}
+
+
+/* ── LEAFLET OVERRIDES ── */
+.leaflet-control-attribution{font-size:9px!important}
+
+/* ══════════════════════════════════════════════
+   REQUEST FORM PAGE
+══════════════════════════════════════════════ */
+.request-page{
+  position:fixed;
+  inset:0;
+  background:var(--cream);
+  z-index:2000;
+  overflow-y:auto;
+  transform:translateX(100%);
+  transition:transform .35s cubic-bezier(0.4,0,0.2,1);
+  visibility:hidden;
+}
+.request-page.open{
+  transform:translateX(0);
+  visibility:visible;
+}
+
+.rp-header{
+  background:var(--green-dark);
+  padding:1rem 2rem;
+  display:flex;
+  align-items:center;
+  gap:1.5rem;
+  position:sticky;top:0;z-index:10;
+  border-bottom:3px solid var(--green);
+}
+.rp-back-btn{
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.25);
+  color:#fff;
+  border-radius:7px;
+  padding:0.45rem 0.9rem;
+  font-family:"Source Sans 3",sans-serif;
+  font-size:0.82rem;
+  font-weight:500;
+  cursor:pointer;
+  display:flex;align-items:center;gap:0.45rem;
+  white-space:nowrap;
+  flex-shrink:0;
+  transition:background .15s;
+}
+.rp-back-btn:hover{background:rgba(255,255,255,0.2)}
+.rp-header-title{}
+.rp-title{
+  font-family:"DM Serif Display",serif;
+  color:#fff;
+  font-size:1.15rem;
+  line-height:1.2;
+}
+.rp-subtitle{
+  color:rgba(255,255,255,0.6);
+  font-size:0.78rem;
+  font-weight:300;
+}
+
+.rp-body{
+  max-width:720px;
+  margin:0 auto;
+  padding:2rem 1.5rem 4rem;
+}
+
+/* Warning block at top of request page */
+.rp-warning-block{
+  background:#fffbeb;
+  border:1.5px solid #d97706;
+  border-left:6px solid #b45309;
+  border-radius:10px;
+  overflow:hidden;
+  margin-bottom:2rem;
+  animation:alertIn .4s cubic-bezier(0.22,1,0.36,1) both;
+}
+.rp-warning-band{
+  background:#b45309;
+  padding:0.45rem 1.2rem;
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.68rem;font-weight:700;letter-spacing:0.15em;
+  text-transform:uppercase;color:#fff;
+}
+.rp-warning-band-label{color:#fff}
+.rp-warning-inner{padding:1.1rem 1.2rem 1.2rem}
+.rp-warning-headline{
+  font-family:"DM Serif Display",serif;
+  font-size:1.4rem;
+  color:#7c2d12;
+  margin-bottom:0.35rem;
+}
+.rp-warning-dest{
+  font-size:0.92rem;
+  font-weight:600;
+  color:var(--text);
+  margin-bottom:0.2rem;
+}
+.rp-warning-body{
+  font-size:0.85rem;
+  color:#92400e;
+  line-height:1.5;
+  margin-bottom:0.6rem;
+}
+.rp-warning-regions{margin-top:0.75rem}
+.rp-warning-region-item{
+  background:#fff;
+  border:1px solid #e5c07a;
+  border-left:4px solid #d97706;
+  border-radius:6px;
+  padding:0.6rem 0.9rem;
+  font-size:0.82rem;
+  color:var(--text-muted);
+  margin-top:0.5rem;
+  line-height:1.45;
+}
+.rp-warning-region-item .region-tag{
+  font-size:0.65rem;font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:#b45309;margin-bottom:0.2rem;
+}
+
+.rp-section-label{
+  font-family:"DM Serif Display",serif;
+  font-size:1rem;
+  color:var(--green-dark);
+  margin:1.75rem 0 0.9rem;
+  padding-bottom:0.5rem;
+  border-bottom:1px solid var(--border);
+}
+.rp-section-label:first-of-type{margin-top:0}
+
+.rp-field-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1rem;
+  margin-bottom:1rem;
+}
+@media(max-width:600px){.rp-field-row{grid-template-columns:1fr}}
+
+.rp-field{margin-bottom:1rem}
+.rp-field-row .rp-field{margin-bottom:0}
+
+.rp-label{
+  display:block;
+  font-size:0.8rem;
+  font-weight:600;
+  color:var(--text);
+  margin-bottom:0.35rem;
+  letter-spacing:0.01em;
+}
+.rp-required{color:var(--red);margin-left:1px}
+
+.rp-input{
+  width:100%;
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  padding:0.65rem 0.9rem;
+  font-family:"Source Sans 3",sans-serif;
+  font-size:0.9rem;
+  color:var(--text);
+  background:var(--white);
+  transition:border-color .15s,box-shadow .15s;
+  outline:none;
+  appearance:none;
+}
+.rp-input:focus{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(0,105,62,0.1);
+}
+.rp-input.rp-readonly{
+  background:var(--cream);
+  color:var(--text-muted);
+  cursor:default;
+}
+.rp-textarea{resize:vertical;min-height:100px}
+
+.rp-form-footer{
+  margin-top:2rem;
+  padding-top:1.5rem;
+  border-top:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:1.5rem;
+}
+@media(max-width:600px){.rp-form-footer{flex-direction:column;align-items:flex-start}}
+.rp-footer-note{
+  font-size:0.78rem;
+  color:var(--text-muted);
+  line-height:1.5;
+  flex:1;
+}
+
+.rp-submit-btn{
+  background:var(--green);
+  color:#fff;
+  border:none;
+  border-radius:9px;
+  padding:0.75rem 2rem;
+  font-family:"Source Sans 3",sans-serif;
+  font-size:0.92rem;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+  flex-shrink:0;
+  transition:background .15s,transform .1s;
+  box-shadow:0 2px 8px rgba(0,105,62,0.25);
+}
+.rp-submit-btn:hover{background:var(--green-mid);transform:translateY(-1px)}
+.rp-submit-btn:active{transform:translateY(0)}
+
+/* Confirmation screen */
+.rp-confirmation{
+  text-align:center;
+  padding:4rem 2rem;
+}
+.rp-confirm-icon{
+  width:64px;height:64px;
+  background:var(--green-light);
+  color:var(--green);
+  border-radius:50%;
+  font-size:2rem;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1.25rem;
+  border:2px solid rgba(0,105,62,0.2);
+}
+.rp-confirm-title{
+  font-family:"DM Serif Display",serif;
+  font-size:1.6rem;
+  color:var(--green-dark);
+  margin-bottom:0.6rem;
+}
+.rp-confirm-body{
+  color:var(--text-muted);
+  max-width:400px;
+  margin:0 auto 2rem;
+  line-height:1.6;
+}
+.rp-confirm-back{
+  background:var(--green);
+  border-color:transparent;
+  padding:0.6rem 1.4rem;
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <svg class="seal" viewBox="0 0 44 44" fill="none">
+    <circle cx="22" cy="22" r="20" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+    <circle cx="22" cy="22" r="17" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+    <text x="22" y="28" text-anchor="middle" font-family="DM Serif Display,serif" font-size="16" fill="white" font-weight="bold">D</text>
+    <path d="M10 33 Q22 36 34 33" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
+    <path d="M10 11 Q22 8 34 11" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
+  </svg>
+  <div class="header-text">
+    <div class="header-title">Travel Destination Checker</div>
+    <div class="header-subtitle">Pre-Travel Authorization Review System</div>
+  </div>
+</header>
+
+<main class="app-wrapper">
+
+  <div class="app-grid">
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+
+      <div class="panel-heading">
+        <div class="panel-title">Destination Check</div>
+        <div class="panel-subtitle">Check whether your destination requires a pre-travel authorization request based on your role.</div>
+      </div>
+
+      <!-- STEP 1: ROLE -->
+      <div class="step-label">
+        <span class="step-num">1</span>
+        Who is travelling?
+      </div>
+      <div class="role-grid">
+        <div class="role-card" data-role="undergrad" onclick="selectRole(this)">
+          <span class="role-icon">🎓</span>
+          <div class="role-name">Undergrad Student</div>
+          <div class="role-desc">Undergraduate</div>
+        </div>
+        <div class="role-card" data-role="grad" onclick="selectRole(this)">
+          <span class="role-icon">📚</span>
+          <div class="role-name">Grad Student</div>
+          <div class="role-desc">Graduate / PhD</div>
+        </div>
+        <div class="role-card" data-role="faculty" onclick="selectRole(this)">
+          <span class="role-icon">🏛️</span>
+          <div class="role-name">Faculty / Staff</div>
+          <div class="role-desc">Faculty & Staff</div>
+        </div>
+      </div>
+
+      <!-- STEP 2: DESTINATION -->
+      <div class="step-label">
+        <span class="step-num">2</span>
+        Where are you going?
+      </div>
+      <div class="search-section">
+        <div class="search-wrapper">
+          <span class="search-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </span>
+          <input type="text" id="destinationInput" placeholder="City, country, or region…" autocomplete="off" oninput="onSearchInput()" onkeydown="onSearchKeydown(event)"/>
+          <button class="clear-btn" id="clearBtn" onclick="clearSearch()" title="Clear">✕</button>
+        </div>
+        <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+        <p class="search-hint">Or click anywhere on the map to pin your destination.</p>
+        <div class="dest-chip" id="destChip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <span id="destChipText"></span>
+        </div>
+      </div>
+
+      <!-- No role hint -->
+      <div class="no-role-hint" id="noRoleHint">
+        ← Please select your traveller type above to see results.
+      </div>
+
+      <!-- STATUS -->
+      <div class="status-card" id="statusCard">
+        <div class="status-icon" id="statusIcon"></div>
+        <div class="status-title" id="statusTitle"></div>
+        <div class="status-body" id="statusBody"></div>
+      </div>
+
+      <!-- ADVISORIES -->
+      <div class="advisories" id="advisories"></div>
+
+    </div>
+
+    <!-- RIGHT PANEL: MAP -->
+    <div class="map-panel">
+      <div class="map-label">
+        Map
+        <small>— click to pin a destination</small>
+      </div>
+      <div id="map"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════════════
+     TRAVEL REQUEST FORM PAGE
+════════════════════════════════════════════════ -->
+<div id="requestPage" class="request-page" aria-hidden="true">
+  <div class="rp-header">
+    <button class="rp-back-btn" onclick="closeRequestPage()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to checker
+    </button>
+    <div class="rp-header-title">
+      <div class="rp-title">Pre-Travel Authorization Request</div>
+      <div class="rp-subtitle">Complete this form to submit a travel request for review.</div>
+    </div>
+  </div>
+
+  <div class="rp-body">
+
+    <!-- Warning block -->
+    <div class="rp-warning-block">
+      <div class="rp-warning-band">
+        <span>⚠</span>
+        <span class="rp-warning-band-label">Action Required</span>
+      </div>
+      <div class="rp-warning-inner">
+        <div class="rp-warning-headline">Travel Request Required</div>
+        <div class="rp-warning-dest" id="rpWarningDest"></div>
+        <div class="rp-warning-body" id="rpWarningBody"></div>
+        <div id="rpWarningRegions"></div>
+      </div>
+    </div>
+
+    <form class="rp-form" id="requestForm" onsubmit="submitRequestForm(event)">
+
+      <div class="rp-section-label">Traveller Information</div>
+      <div class="rp-field-row">
+        <div class="rp-field">
+          <label class="rp-label" for="rp-name">Full Name <span class="rp-required">*</span></label>
+          <input class="rp-input" type="text" id="rp-name" placeholder="First Last" required>
+        </div>
+        <div class="rp-field">
+          <label class="rp-label" for="rp-email">University Email <span class="rp-required">*</span></label>
+          <input class="rp-input" type="email" id="rp-email" placeholder="you@university.edu" required>
+        </div>
+      </div>
+      <div class="rp-field-row">
+        <div class="rp-field">
+          <label class="rp-label" for="rp-dept">Department / Unit <span class="rp-required">*</span></label>
+          <input class="rp-input" type="text" id="rp-dept" placeholder="e.g. Biology, Office of Research" required>
+        </div>
+        <div class="rp-field">
+          <label class="rp-label" for="rp-role-display">Traveller Type</label>
+          <input class="rp-input rp-readonly" type="text" id="rp-role-display" readonly>
+        </div>
+      </div>
+
+      <div class="rp-section-label">Travel Details</div>
+      <div class="rp-field">
+        <label class="rp-label" for="rp-destination">Destination <span class="rp-required">*</span></label>
+        <input class="rp-input rp-readonly" type="text" id="rp-destination" readonly>
+      </div>
+      <div class="rp-field-row">
+        <div class="rp-field">
+          <label class="rp-label" for="rp-depart">Departure Date <span class="rp-required">*</span></label>
+          <input class="rp-input" type="date" id="rp-depart" required>
+        </div>
+        <div class="rp-field">
+          <label class="rp-label" for="rp-return">Return Date <span class="rp-required">*</span></label>
+          <input class="rp-input" type="date" id="rp-return" required>
+        </div>
+      </div>
+      <div class="rp-field">
+        <label class="rp-label" for="rp-purpose">Purpose of Travel <span class="rp-required">*</span></label>
+        <select class="rp-input" id="rp-purpose" required>
+          <option value="" disabled selected>Select a purpose…</option>
+          <option>Conference / Symposium</option>
+          <option>Field Research</option>
+          <option>Study Abroad / Exchange</option>
+          <option>Clinical Rotation</option>
+          <option>Faculty-led Program</option>
+          <option>Administrative / University Business</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="rp-field">
+        <label class="rp-label" for="rp-notes">Additional Notes</label>
+        <textarea class="rp-input rp-textarea" id="rp-notes" placeholder="Briefly describe the nature of your travel, any known risk factors, or relevant context…" rows="4"></textarea>
+      </div>
+
+      <div class="rp-form-footer">
+        <p class="rp-footer-note">By submitting, you confirm the information above is accurate. The Office of Risk Management will review your request within 3–5 business days.</p>
+        <button type="submit" class="rp-submit-btn">Submit Request</button>
+      </div>
+    </form>
+
+    <!-- Confirmation screen (hidden until submitted) -->
+    <div class="rp-confirmation" id="rpConfirmation" style="display:none">
+      <div class="rp-confirm-icon">✓</div>
+      <div class="rp-confirm-title">Request Submitted</div>
+      <div class="rp-confirm-body">Your travel authorization request has been received. You will be contacted at your university email within 3–5 business days.</div>
+      <button class="rp-back-btn rp-confirm-back" onclick="closeRequestPage()">← Return to checker</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+//  CONFIGURATION
+// ═══════════════════════════════════════════════
+const PROXIMITY_KM = 100;
+const NOMINATIM_DELAY_MS = 400;
+const MAP_DEFAULT = { lat: 20, lng: 0, zoom: 2 };
+
+// ═══════════════════════════════════════════════
+//  EMBEDDED COUNTRY DATA (from CSV cols J,K,L)
+// ═══════════════════════════════════════════════
+const COUNTRY_DATA = [{"country":"Afghanistan","region":"Kabul","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Albania","region":"Tirana","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Algeria","region":"Algiers","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Algeria (specific)","region":"Areas of El Taref, Souk Ahras and Tebessa provinces within 12 miles (20km) of the Tunisian border; areas within 12 miles of the Libyan border; areas within 30 miles (50km) of the southern borders with Mauritania, Mali and Niger","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"American Samoa (US)","region":"Pago Pago","continent":"Oceania","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Andorra","region":"Andorra la Vella","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Angola","region":"Luanda","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Angola (specific)","region":"Northeast portions within Cabinda exclave (includes Belize and Buco Zau municipalities but does not include the southern Cacongo and Cabinda municipalities or Cabinda city itself)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Anguilla (UK)","region":"The Valley","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Antarctica","region":"","continent":"Antarctica","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Antigua & Barbuda","region":"St. John's","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Argentina","region":"Buenos Aires","continent":"S. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Argentina (specific)","region":"Rosario and Santa Fe (both Santa Fe province)","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Armenia","region":"Yerevan","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Armenia (specific)","region":"Border with Azerbaijan (within 6.2 miles/10 km of border), and Syunik and Vayots Dzor provinces","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Aruba (Netherlands)","region":"Oranjestad","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Australia","region":"Canberra","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Austria","region":"Vienna","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Azerbaijan","region":"Baku","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Azerbaijan (specific)","region":"Armenian border areas (within 6.2 miles/10 km of border) and Nagorno-Karabakh","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Bahamas","region":"Nassau","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Bahrain","region":"Manama","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Bangladesh","region":"Dhaka","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Bangladesh (specific)","region":"Chittagong Hill Tracts","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Bangladesh (specific)","region":"Dhaka city","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Barbados","region":"Bridgetown","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Belarus","region":"Minsk","continent":"Europe","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Belgium","region":"Brussels","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Belize","region":"Belmopan","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Benin","region":"Porto-Novo","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Benin (specific)","region":"Alibori and Atakora departments, and within 18 miles (30 km) from the border with Nigeria","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Benin (specific)","region":"Within 18 miles (30 km) from the border with Burkina Faso and Niger, including the Pendjari (Atakora department) and W (Alibori department) national parks","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Bermuda (UK)","region":"Hamilton","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Bhutan","region":"Thimphu","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Bolivia","region":"La Paz (executive, legislative) & Sucre (judicial)","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Bolivia (specific)","region":"Chapare region","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Bonaire (Netherlands)","region":"Kralendijk","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Bosnia & Herzegovina","region":"Sarajevo","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Botswana","region":"Gaborone","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Brazil","region":"Bras\u00edlia","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Brazil (specific)","region":"Any areas within 160 km/100 miles of Brazil\u2019s land borders with Venezuela, Colombia, Peru, Bolivia, Guyana, Suriname, French Guiana, and Paraguay (Note: This does not apply to the Foz do Iguacu National Park or Pantanal National Park.)","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Brazil (specific)","region":"Brasilia\u2019s administrative regions (commonly known as \u201csatellite cities\u201d) of Ceilandia, Santa Maria, Sao Sebastiao, and Paranoa during non-daylight hours","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Brazil (specific)","region":"Informal housing developments (commonly referred to in Brazil as favelas, vilas, comunidades, and/or conglomerados) at any time of day","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"British Virgin Islands (UK)","region":"","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Brunei","region":"Bandar Seri Begawan","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Bulgaria","region":"Sofia","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Burkina Faso","region":"Ouagadougou","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Burkina Faso (specific)","region":"Est, Sahel, Centre-Nord regions; Loroum, Yatenga provinces (both Nord region); Koulpelogo, Boulgou provinces (both Centre-Est region); Kossi, Banwa, Sourou, Mouhoun, Nayala provinces (all Boucle du Mouhoun region)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Burkina Faso (specific)","region":"Ouagadougou, Bobo-Dioulasso cities","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Burundi","region":"Gitega","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Burundi (specific)","region":"Areas of Bujumbura Rural province west of the Rusizi river and north of Isale; Bubanza and Cibitoke provinces; Kibira National Park","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Cabo Verde","region":"Praia","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Cabo Verde (specific)","region":"Praia (city)","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Cambodia","region":"Phnom Penh","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Cambodia (specific)","region":"Phnom Penh (city); Very remote areas of Battambang, Banteay Meanchey, Pursat, Siem Reap, Pailin, and Kampong Thom provinces","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Cambodia (specific)","region":"Areas within 16 miles (25 km) of the Thai border","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Cambodia (specific)","region":"Areas within 16-30 miles (25-50 km) of the Thai border","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Cameroon","region":"Yaound\u00e9","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Cameroon (specific)","region":"Extreme North Region","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Cameroon (specific)","region":"Bakassi peninsula; areas within 18 miles (30km) of borders with Central African Republic; Northwest and Southwest regions","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Canada","region":"Ottawa","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Cayman Islands (UK)","region":"","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Central African Republic","region":"Bangui","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Chad","region":"N'Djamena","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Chad (specific)","region":"Areas west of Bol in Lac region; Borkou, Ennedi East, Ennedi West and Tibesti regions; areas within 18 miles (30km) of borders with Sudan, CAR","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Chad (specific)","region":"Areas within 18 miles (30km) of borders with Cameroon, Libya, Niger, and Nigeria","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Chile","region":"Santiago","continent":"S. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"China","region":"Beijing","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Colombia","region":"Bogot\u00e1","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Colombia (specific)","region":"Cali city; Areas affected by activity from illicit armed groups, including those bordering Venezuela (entire departments of Arauca and Norte de Santander; 62 miles (100 km) from border of Boyaca, Cesar, Guainia, La Guaijira, and Vichada departments), and along the Pacific coast (northern and southern parts of Choco department, entire departments of Cauca and Valle del Cauca) as well as parts of the northern and mid-eastern regions (Antioquia department: The northern two-thirds of the department, north of the capital Medellin; Bolivar department: southern half; Cordoba department: southern half; Guaviare department: area around San Jose del Guaviare municipality; Meta department: Southern areas bordering Caqueta and Guaviare departments; and Caqueta: Northern areas bordering Meta department.)","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Comoros","region":"Moroni","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Comoros (specific)","region":"Anjouan and Moroni","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Congo","region":"Brazzaville","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Congo (specific)","region":"Areas in Likouala and Sangha departments within 20 miles (32km) of border with Central African Republic","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Cook Islands","region":"Avarua","continent":"Oceania","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Costa Rica","region":"San Jos\u00e9","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Costa Rica (specific)","region":"Lim\u00f3n province, Central Valley","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"C\u00f4te d'Ivoire","region":"Yamoussoukro","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"C\u00f4te d'Ivoire (specific)","region":"Northern border regions within 25 miles (40 km) of borders with Mali and Burkina Faso, and Comoe National Park","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"C\u00f4te d'Ivoire (specific)","region":"Liberian border (within 18 miles) in Montagnes and Bas-Sassandra districts","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Croatia","region":"Zagreb","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Cuba","region":"Havana","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Curacao (Netherlands)","region":"","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Cyprus","region":"Nicosia","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Czech Republic","region":"Prague","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Denmark","region":"Copenhagen","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Djibouti","region":"Djibouti","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Djibouti (specific)","region":"Areas within 18.6 miles (30 km) bordering Eritrea","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Dominica","region":"Roseau","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Dominican Republic","region":"Santo Domingo","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"DR Congo (DRC)","region":"Kinshasa","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":false},{"country":"DRC (specific)","region":"North Kivu province; South Kivu province; Ituri province; Tanganyika province; Haut Lomani province; Kasai province; Kasai-Oriental province; Kasai-Central province; Mai-Ndombe province","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Ecuador","region":"Quito","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Ecuador (specific)","region":"Western provinces (El Oro, Esmeraldas, Guayas, Los Rios, Manabi, Santa Elena, Santo Domingo de los Tsachilas); Amazon region; within 18.6 miles (30 km) of the Colombian border areas","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Egypt","region":"Cairo","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Egypt (specific)","region":"North Sinai","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Egypt (specific)","region":"Western Desert","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"El Salvador","region":"San Salvador","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Equatorial Guinea","region":"Malabo","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Eritrea","region":"Asmara","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Eritrea (specific)","region":"Within 18.6 miles (30 km) of Ethiopian, Sudanese, Djiboutian borders","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Estonia","region":"Tallinn","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Eswatini","region":"Mbabane","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Ethiopia","region":"Addis Ababa","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":false},{"country":"Ethiopia (specific)","region":"Areas within 18.6 miles (30km) of the Somalia, Kenya, South Sudan border","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Ethiopia (specific)","region":"Tigray state; East Gojam, North Shewa, North Wollo, West Gojam (all Amhara state); East Shewa, East Wellega, Horo Guduru, North Shewa, West Shewa and West Wellega (all Oromia state)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Ethiopia (specific)","region":"Gambella and Benishangul Gumuz Regions; Southern Nations and National People (SNNP) Region","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Fiji","region":"Suva","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Finland","region":"Helsinki","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"France","region":"Paris","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"French Guiana (France)","region":"Cayenne","continent":"S. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"French Polynesia (France)","region":"Papeete","continent":"Oceania","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"French West Indies - French Saint Martin (France)","region":"Marigot","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"French West Indies - Guadeloupe (France)","region":"Basse-Terre","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"French West Indies - Martinique (France)","region":"Fort-de-France","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"French West Indies - Saint Barth\u00e9lemy (France)","region":"Gustavia","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Gabon","region":"Libreville","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Georgia","region":"Tbilisi","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Georgia (specific)","region":"Abkhazia and South Ossetia","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Germany","region":"Berlin","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Ghana","region":"Accra","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Ghana (specific)","region":"Border areas with Burkina Faso, Cote d`Ivoire and Togo; area around Gushiegu (Northern region)","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Gibraltar (UK)","region":"Gibraltar","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Greece","region":"Athens","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Greenland (Denmark)","region":"Nuuk","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Grenada","region":"St. George's","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Guam (US)","region":"","continent":"Oceania","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Guatemala","region":"Guatemala City","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Guatemala (specific)","region":"Guatemala City (Zone 18, city of Villa Nueva); Chiquimula, Peten, Zacapa and Izabal Departments","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Guatemala (specific)","region":"San Marcos Department; Huehuetenango Department","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Guinea","region":"Conakry","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Guinea-Bissau","region":"Bissau","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Guyana","region":"Georgetown","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Haiti","region":"Port-au-Prince","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Haiti (specific)","region":"Port-au-Prince city","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Holy See","region":"Vatican City","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Honduras","region":"Tegucigalpa","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"No","specific":false},{"country":"Honduras (specific)","region":"Gracias a Dios Department","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Hong Kong (China SAR)","region":"Hong Kong","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Hungary","region":"Budapest","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Iceland","region":"Reykjavik","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"India","region":"New Delhi","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"India (specific)","region":"Andaman and Nicobar Islands, Lakshadweep, Sikkim, Himachal Pradesh, Uttarakhand, Leh district (Ladakh union territory)","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"India (specific)","region":"Manipur and Nagaland states; some districts of Andhra Pradesh, Arunachal Pradesh, Asom (Assam), Bihar, Chhattisgarh, Jharkhand, Maharashtra, Odisha and Telangana states; Kashmir division and parts of Jammu division (both Jammu and Kashmir union territory)","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Indonesia","region":"Jakarta","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Indonesia (specific)","region":"Central Papua, Highland Papua provinces","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Iran","region":"Tehran","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Iran (specific)","region":"Sistan-e Balochistan","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Iraq","region":"Baghdad","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Ireland","region":"Dublin","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Israel","region":"Jerusalem","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Israel (specific)","region":"Within thirty-one miles (50 km) of northern border area with Lebanon","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Italy","region":"Rome","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Jamaica","region":"Kingston","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Jamaica (specific)","region":"St. Ann\u2019s Parish; St. Catherine\u2019s Parish (including Spanish Town); Clarendon Parish; St. Elizabeth\u2019s Parish; Hanover Parish; St. James Parish; Kingston and St. Andrew Parish; Manchester Parish; St. Thomas Parish; Trelawny Parish; Westmoreland Parish","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Japan","region":"Tokyo","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Jordan","region":"Amman","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Jordan (specific)","region":"Within 2 miles (3.5 km) of the border area with Syria and northeastern border area with Iraq; designated refugee camps in Jordan; Zarqa, Rusayfah, and the Baqa\u2019a neighborhood of Ayn Basha","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Kazakhstan","region":"Nur-Sultan","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Kenya","region":"Nairobi","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Kenya (specific)","region":"The northern counties of Baringo, Turkana, West Pokot, Samburu, Marsabit and Isiolo; The Somali-border counties of Wajir, Mandera, Garissa and Lamu","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Kenya (specific)","region":"Nairobi (city) neighborhoods of Eastleigh and Kibera","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Kiribati","region":"South Tarawa","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Kosovo","region":"Pristina","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Kosovo (specific)","region":"Leposavic, North Mitrovica, Zubin Potok and Zvecan","continent":"Europe","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Kuwait","region":"Kuwait City","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Kuwait (specific)","region":"Desert region within 30 miles (48 km) of the border with Iraq","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Kuwait (specific)","region":"Jeleeb Al-Shuyoukh area in Kuwait City","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Kyrgyzstan","region":"Bishkek","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Kyrgyzstan (specific)","region":"Batken province, the international border regions of Osh and Jalal-Abad provinces","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Laos","region":"Vientiane","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Laos (specific)","region":"Xaysomboun (Xaisomboun) province","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Latvia","region":"Riga","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Lebanon","region":"Beirut","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Lebanon (specific)","region":"Baalbek-Hermel governorate; areas within five miles (8km) of the Syrian border; Nabatieh, South governorates","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Lesotho","region":"Maseru","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Liberia","region":"Monrovia","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Libya","region":"Tripoli","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Liechtenstein","region":"Vaduz","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Lithuania","region":"Vilnius","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Luxembourg","region":"Luxembourg City","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Macao (China SAR)","region":"Macao","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Madagascar","region":"Antananarivo","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Madagascar (specific)","region":"Anosy (except its capital Fort Dauphin (T\u00f4lanaro)) and Atsimo-Atsinanana regions (south-east)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Malawi","region":"Lilongwe","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Malawi (specific)","region":"Blantyre (city), Lilongwe (city)","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Malaysia","region":"Kuala Lumpur","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Malaysia (specific)","region":"Kuala Lumpur; Coastal areas and island groups of eastern Sabah state (East Malaysia); Selangor","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Maldives","region":"Male","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Maldives (specific)","region":"Male and Addu City (Addu atoll)","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Mali","region":"Bamako","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Mali (specific)","region":"Bamako (city)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Mali (specific)","region":"Gao, Kidal, Menaka, Mopti, Segou, Sikasso, Taoudeni and Timbuktu regions","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Mali (specific)","region":"Border with Mauritania","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Malta","region":"Valletta","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Marshall Islands","region":"Majuro","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Mauritania","region":"Nouakchott","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Mauritania (specific)","region":"Eastern desert areas (see Global Dartmouth for specific areas)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Mauritius","region":"Port Louis","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Mayotte (France)","region":"Mamoudzou","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Mexico","region":"Mexico City","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Mexico (specific)","region":"States of Colima, Guerrero, Michoacan, Sinaloa, Tamaulipas, Zacatecas","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Mexico (specific)","region":"States of Baja California (High), Chihuahua (High), Morelos (High), Sonora (High), Chiapas (High)","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"States of Guanajuata, Jalisco","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"State of Mexico","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"States of Aguascalientes, Baja California Sur, Coahuila, Durango, Hidalgo, Nayarit, Oaxaca, Quer\u00e9taro, Quintana Roo, San Luis Potosi, and Tlaxcala","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"States of Nuevo Leon, Puebla, Veracruz","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"States of Tabasco","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"Yucatan Peninsula","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Mexico (specific)","region":"Campeche State","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Micronesia","region":"Palikir","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Moldova","region":"Chisinau","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Moldova (specific)","region":"Transnistria","continent":"Europe","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Monaco","region":"Monaco","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Mongolia","region":"Ulaanbaatar","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Montenegro","region":"Podgorica","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Montserrat (UK)","region":"Plymouth, Brades","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Morocco","region":"Rabat","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Morocco (specific)","region":"Southern provinces","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Mozambique","region":"Maputo","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Mozambique (specific)","region":"Cabo Delgado Province; Niassa Special Reserve in Niassa Province; nothern districts of Nampula Province","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Myanmar","region":"Naypyidaw","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Myanmar (specific)","region":"Conflict zones (all of Chin, Kayah, Kachin, Rakhine states and Sagaing region; some districts and townships in Bago, Magway, Mandalay, Tanintharyi regions and Kayin, Mon and Shan states)","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Namibia","region":"Windhoek","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Nauru","region":"Yaren District","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Nepal","region":"Kathmandu","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Netherlands","region":"Amsterdam","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"New Caledonia (France)","region":"Noum\u00e9a","continent":"Oceania","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"New Zealand","region":"Wellington","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Nicaragua","region":"Managua","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Niger","region":"Niamey","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Niger (specific)","region":"Areas of Tillaberi and Tahoua region within 25 miles (40 km) of the border of Mali; areas of Diffa region bordering Borno state (Nigeria) and Lac region (Chad); areas within 30 miles (48 km) bordering Burkina Faso","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Niger (specific)","region":"Filingue, Ouallam, Say, Tera and Tillaberi departments (all Tillaberi); northern half of Tahoua region; Agadez region; most of Diffa region; areas of Tahoua and Maradi regions within 25 miles (40 km) of the border with Nigeria","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Nigeria","region":"Abuja","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":false},{"country":"Nigeria (specific)","region":"Abuja (city)","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Nigeria (specific)","region":"Cities of Calabar, Enugu, Jos, Kano, Lagos, Port Harcourt","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Nigeria (specific)","region":"Borno state","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Nigeria (specific)","region":"Abia, Anambra, Bauchi, Bayelsa, Delta, Enugu, Gombe, Imo, Kaduna, Kano, Katsina, Kogi, northern Adamawa, Rivers, Sokoto, Yobe, and Zamfara states","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Northern Mariana Islands (US)","region":"Saipan","continent":"Oceania","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"North Korea","region":"Pyongyang","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"North Macedonia","region":"Skopje","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Norway","region":"Oslo","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Oman","region":"Muscat","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Oman (specific)","region":"Within 18.6 miles (30 km) of the Yemen border area","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Pakistan","region":"Islamabad","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":false},{"country":"Pakistan (specific)","region":"Peshawar (city); Districts in Khyber Pakhtunkhwa bordering the former Federally Administered Tribal Areas (FATA); Balochistan except for Gwadar and central districts; The former Federally Administered Tribal Areas (Khyber Pakhtunkhwa province)","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Palau","region":"Ngerulmud","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Palestinian Territories (West Bank & Gaza)","region":"Ramallah","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Palestinian Territories (specific)","region":"Gaza","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Palestinian Territories (specific)","region":"West Bank (Jenin, Nablus, Tubas, Tulkarm)","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Panama","region":"Panama City","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Panama (specific)","region":"Col\u00f3n","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Panama (specific)","region":"Dari\u00e9n","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Papua New Guinea","region":"Port Moresby","continent":"Australia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":false},{"country":"Papua New Guinea (specific)","region":"Central Bougainville, Highlands Region","continent":"Australia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Paraguay","region":"Asunci\u00f3n","continent":"S. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Paraguay (specific)","region":"Within 18.6 miles (30 km) of border with Brazil, tri-border area, tri-border area","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Peru","region":"Lima","continent":"S. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Peru (specific)","region":"Ene, Apurimac and Mantaro River Valley (VRAEM)","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Peru (specific)","region":"Within 18.6 miles (30 km) of the Colombian-Peruvian border in the Loreto Region","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Philippines","region":"Manila","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Philippines (specific)","region":"Southwest Mindanao, the Sulu Archipelago (Basilan, Sulu, Tawi-Tawi)","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Poland","region":"Warsaw","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Portugal","region":"Lisbon","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Puerto Rico (US)","region":"San Juan","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Qatar","region":"Doha","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"R\u00e9union (France)","region":"Saint-Denis","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Romania","region":"Bucharest","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Russia","region":"Moscow","continent":"Europe","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Russia (specific)","region":"Belgorod, Bryansk, Kursk, Rostov and Voronezh provinces; Rostov-on-Don (city); The North Caucasus republics of Chechnya, Dagestan, Ingushetia, Kabardino-Balkaria, Karachaevo-Cherkessia and North Ossetia","continent":"Europe","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Rwanda","region":"Kigali","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Rwanda (specific)","region":"Within 18.6 miles (30 km) of border with Congo (DRC)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Rwanda (specific)","region":"Border with Burundi","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Saba (Netherlands)","region":"The Bottom","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Saint Kitts & Nevis","region":"Basseterre","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Saint Lucia","region":"Castries","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Samoa","region":"Apia","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"San Marino","region":"San Marino","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"S\u00e3o Tom\u00e9 and Pr\u00edncipe","region":"S\u00e3o Tom\u00e9","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Saudi Arabia","region":"Riyadh","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Saudi Arabia (specific)","region":"Within 18.6 miles (30 km) of the Iraq and Yemen border areas","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Senegal","region":"Dakar","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Senegal (specific)","region":"Casamance region","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Senegal (specific)","region":"Areas within 31 miles (50 km) of the border with Mali in Kedougou and Tambacounda regions","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Serbia","region":"Belgrade","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Serbia (specific)","region":"Sand\u017eak, Pre\u0161evo Valley","continent":"Europe","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Seychelles","region":"Victoria","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Sierra Leone","region":"Freetown","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Singapore","region":"Singapore","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Slovakia","region":"Bratislava","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Slovenia","region":"Ljubljana","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Solomon Islands","region":"Honiara","continent":"Australia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Somalia","region":"Mogadishu","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"South Africa","region":"Cape Town","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"South Africa (specific)","region":"City of Johannesburg, eThekwini (Durban) municipality","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"South Africa (specific)","region":"High-density, low-income urban areas (inquire with Global Dartmouth with specifics on urban travel location to determine if traveling in a high-density, low-income area)","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"South Korea","region":"Seoul","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"South Sudan","region":"Juba","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Spain","region":"Madrid","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Sri Lanka","region":"Sri Jayawardenepura Kotte (legislative) & Colombo (executive and judicial)","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Sint Eustatius (Netherlands)","region":"Oranjestad","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"St. Maarten (Netherlands)","region":"Philipsburg","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"St. Martin (France)","region":"Marigot","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"St. Vincent & Grenadines","region":"Kingstown","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Sudan","region":"Khartoum","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Sudan (specific)","region":"Blue Nile, Gedaref, Kassala, Northern, River Nile, Red Sea and Sennar states","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Sudan (specific)","region":"Khartoum, Gazira, White Nile, North, West and South Kordofan states and Darfur region","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Suriname","region":"Paramaribo","continent":"S. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Sweden","region":"Stockholm","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Switzerland","region":"Bern","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Syria","region":"Damascus","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Taiwan","region":"Taipei","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Tajikistan","region":"Dushanbe","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Tajikistan (specific)","region":"Within 18.6 miles (30 km) of the Afghan border; Areas of Sughd province within 18.6 miles (30 km) of the Kyrgyz border; Gorno-Badakhshan Autonomous Oblast","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Tanzania","region":"Dodoma","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Tanzania (specific)","region":"Southern border areas within 12 miles (20km) of the Mozambican border and inland up to 93 miles (150km) from the coast","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Thailand","region":"Bangkok","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Thailand (specific)","region":"Bangkok","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Thailand (specific)","region":"Within 12 miles (20 km) of Myanmar","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Thailand (specific)","region":"Areas within 16 miles (25 km) of the Cambodian border","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Thailand (specific)","region":"Areas within 16-30 miles (25-50 km) of the Cambodian border","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Thailand (specific)","region":"Hat Yai (city); northern districts of Songkhla province","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":true},{"country":"Thailand (specific)","region":"Southern provinces of Yala, Narathiwat, Pattani; southern districts of Songkhla province","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"The Gambia","region":"Banjul","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Timor-Leste","region":"Dili","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Togo","region":"Lom\u00e9","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Togo (specific)","region":"Northern areas within 18 miles (30km) of the Burkina Faso border","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Tonga","region":"Nuku'alofa","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Trinidad & Tobago","region":"Port of Spain","continent":"N. America","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Trinidad & Tobago (specific)","region":"Laventille, Beetham (Port of Spain neighborhoods)","continent":"N. America","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Trinidad & Tobago (specific)","region":"Tobago","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":true},{"country":"Tunisia","region":"Tunis","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Tunisia (specific)","region":"Libyan border areas; areas of Jendouba, Kasserine and Kef governorates within 25 miles (40km) of the Algerian border; Mount Chaambi, Mount Mgilla, Mount Salloum and Mount Sammama","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"T\u00fcrkiye","region":"Ankara","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"T\u00fcrkiye (specific)","region":"Areas within ten miles (16km) of the Syrian border; Hakkari, Sirnak, Diyarbakir provinces","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":true},{"country":"Turkmenistan","region":"Ashgabat","continent":"Asia","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Turkmenistan (specific)","region":"Within 18.6 miles (30 km) of the Afghan border","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Turks and Caicos Islands","region":"Cockburn Town","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Tuvalu","region":"Funafuti","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Uganda","region":"Kampala","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false},{"country":"Uganda (specific)","region":"Areas within 18.6 miles (30km) of the Congo (DRC) and South Sudan borders","continent":"Africa","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Ukraine","region":"Kyiv","continent":"Europe","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"United Arab Emirates","region":"Abu Dhabi","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"United Kingdom","region":"London","continent":"Europe","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"United States","region":"Washington DC","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Uruguay","region":"Montevideo","continent":"S. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"US Virgin Islands (US)","region":"Charlotte Amalie","continent":"N. America","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Uzbekistan","region":"Tashkent","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Uzbekistan (specific)","region":"Within 18.6 miles (30 km) of the Afghan and Kyrgyz borders, Fergana Valley","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"No","specific":true},{"country":"Vanuatu","region":"Port Vila","continent":"Australia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Venezuela","region":"Caracas","continent":"S. America","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Vietnam","region":"Hanoi","continent":"Asia","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Wallis and Futuna (France)","region":"Mat\u0101'utu","continent":"Oceania","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Yemen","region":"Sana'a","continent":"Asia","undergrad":"Yes","grad":"Yes","faculty":"Yes","specific":false},{"country":"Zambia","region":"Lusaka","continent":"Africa","undergrad":"No","grad":"No","faculty":"No","specific":false},{"country":"Zimbabwe","region":"Harare","continent":"Africa","undergrad":"Yes","grad":"No","faculty":"No","specific":false}]
+;
+
+// ═══════════════════════════════════════════════
+//  COUNTRY CENTROIDS (for proximity checks)
+// ═══════════════════════════════════════════════
+const CENTROIDS = {
+"afghanistan":[33,65],"albania":[41,20],"algeria":[28,3],"angola":[-11,17.5],
+"antigua and barbuda":[17.1,-61.8],"argentina":[-34,-64],"armenia":[40,45],
+"australia":[-25,133],"austria":[47.5,14.5],"azerbaijan":[40.5,47.5],
+"bahamas":[25,-77],"bahrain":[26,50.5],"bangladesh":[24,90],"barbados":[13.2,-59.5],
+"belarus":[53,28],"belgium":[50.8,4.5],"belize":[17,-88.5],"benin":[9.5,2.3],
+"bhutan":[27.5,90.5],"bolivia":[-17,-65],"bosnia and herzegovina":[44,17.5],
+"botswana":[-22,24],"brazil":[-10,-55],"brunei":[4.5,114.7],"bulgaria":[43,25],
+"burkina faso":[13,-2],"burundi":[-3,29.5],"cabo verde":[16,-24],
+"cambodia":[12.5,104.5],"cameroon":[5.5,12.5],"canada":[60,-95],
+"central african republic":[7,21],"chad":[15,18.5],"chile":[-35,-71],
+"china":[35,105],"colombia":[4,-74],"comoros":[-11.6,43.3],
+"congo":[-1,15],"dr congo":[-4,24],"costa rica":[10,-84],
+"croatia":[45.5,16.5],"cuba":[22,-80],"czech republic":[50,15.5],
+"cote divoire":[7.5,-5.5],"denmark":[56,10],"djibouti":[11.5,43],
+"dominican republic":[19,-70.7],"ecuador":[-2,-77.5],"egypt":[27,30],
+"el salvador":[13.7,-88.9],"eritrea":[15,39],"ethiopia":[9,39],
+"eswatini":[-26.5,31.5],"finland":[64,26],"france":[46,2],"gabon":[-1,11.5],
+"georgia":[42,43.5],"germany":[51,10],"ghana":[8,-2],"greece":[39,22],
+"guatemala":[15.5,-90],"guinea":[11,-10],"guinea-bissau":[12,-15],
+"guyana":[5,-59],"haiti":[19,-72.5],"honduras":[15,-87],"hungary":[47,19],
+"india":[20,77],"indonesia":[-2,117],"iran":[32,53],"iraq":[33,43.5],
+"ireland":[53,-8],"israel":[31.5,35],"italy":[43,12],
+"jamaica":[18,-77.3],"japan":[36,138],"jordan":[31,36],
+"kazakhstan":[48,68],"kenya":[1,38],"north korea":[40,127],
+"south korea":[37,128],"kosovo":[42.5,21],"kuwait":[29.5,47.8],
+"kyrgyzstan":[41,75],"laos":[18,103],"lebanon":[33.8,35.8],
+"liberia":[6.5,-9.5],"libya":[27,17],"madagascar":[-20,47],
+"malawi":[-13,34],"malaysia":[4,109.5],"mali":[17,-4],
+"mauritania":[20,-12],"mexico":[24,-102],"moldova":[47,29],
+"mongolia":[46,105],"montenegro":[42.8,19.5],"morocco":[32,-6],
+"mozambique":[-18,35],"myanmar":[17,96],"namibia":[-22,17],
+"nepal":[28,84],"netherlands":[52.5,5.5],"nicaragua":[13,-85],
+"niger":[17,8],"nigeria":[10,8],"north macedonia":[41.6,21.7],
+"norway":[64,26],"oman":[22,57],"pakistan":[30,70],
+"palestinian territories":[31.9,35.2],"panama":[9,-80],
+"papua new guinea":[-6,147],"paraguay":[-23,-58],"peru":[-10,-76],
+"philippines":[13,122],"poland":[52,20],"portugal":[39.5,-8],
+"qatar":[25.5,51.2],"romania":[46,25],"russia":[60,100],
+"rwanda":[-2,30],"saudi arabia":[24,45],"senegal":[14.5,-14],
+"serbia":[44,21],"sierra leone":[8.5,-12],"somalia":[6,46],
+"south africa":[-29,25],"south sudan":[7,30],"spain":[40,-4],
+"sri lanka":[8,81],"sudan":[15,30],"sweden":[62,15],
+"switzerland":[47,8],"syria":[35,38],"taiwan":[24,121],
+"tajikistan":[39,71],"tanzania":[-6,35],"thailand":[15,101],
+"the gambia":[13.4,-15.3],"timor-leste":[-8.9,125.7],"togo":[8,1.2],
+"tunisia":[34,9],"turkey":[39,35],"turkiye":[39,35],
+"turkmenistan":[40,60],"uganda":[1,32],"ukraine":[49,32],
+"united arab emirates":[24,54],"united kingdom":[54,-2],
+"united states":[38,-97],"uruguay":[-33,-56],"uzbekistan":[41,64],
+"venezuela":[8,-66],"vietnam":[16,108],"yemen":[15.5,48.5],
+"zambia":[-15,30],"zimbabwe":[-20,30]
+};
+
+// ═══════════════════════════════════════════════
+//  COUNTRY NAME NORMALIZATION
+// ═══════════════════════════════════════════════
+// Maps Nominatim country names → CSV base names (normalized)
+const NOMINATIM_ALIASES = {
+  "democratic republic of the congo": "dr congo",
+  "republic of the congo": "congo",
+  "ivory coast": "cote divoire",
+  "turkey": "turkiye",
+  "holy see": "holy see",
+  "vatican city": "holy see",
+  "cape verde": "cabo verde",
+  "czechia": "czech republic",
+  "swaziland": "eswatini",
+  "east timor": "timor-leste",
+  "the bahamas": "bahamas",
+  "gambia": "the gambia",
+  "state of palestine": "palestinian territories",
+  "palestinian territory": "palestinian territories",
+  "republic of korea": "south korea",
+  "korea": "south korea",
+  "democratic peoples republic of korea": "north korea",
+  "burma": "myanmar",
+  "macau": "macao",
+  "republic of north macedonia": "north macedonia",
+  "antigua and barbuda": "antigua and barbuda",
+  "trinidad and tobago": "trinidad and tobago",
+  "bosnia and herzegovina": "bosnia and herzegovina",
+  "saint kitts and nevis": "saint kitts and nevis",
+  "saint lucia": "saint lucia",
+  "saint vincent and the grenadines": "saint vincent and grenadines",
+  "sao tome and principe": "sao tome and principe",
+  "dr congo": "dr congo",
+};
+
+function normalizeCountry(raw) {
+  if (!raw) return "";
+  let s = raw.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/\(.*?\)/g, "")   // remove (US), (UK), (China SAR), etc.
+    .replace(/&/g, "and")
+    .replace(/\bst\./g, "saint")
+    .replace(/[\'\'`]/g, "")
+    .replace(/[^a-z0-9 \-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return NOMINATIM_ALIASES[s] || s;
+}
+
+function buildLookups() {
+  window.countryLookup = {};
+  window.specificLookup = {};
+  COUNTRY_DATA.forEach(row => {
+    const name = row.country;
+    if (row.specific) {
+      const base = normalizeCountry(name.replace(/\s*\(specific\)/i, ""));
+      if (!specificLookup[base]) specificLookup[base] = [];
+      specificLookup[base].push(row);
+    } else {
+      const norm = normalizeCountry(name);
+      if (!countryLookup[norm]) countryLookup[norm] = [];
+      countryLookup[norm].push(row);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let selectedRole = null;
+let currentDestination = null; // {lat, lng, displayName, country}
+let map, marker, searchTimeout, dropdownFocusIdx = -1;
+let currentDropdownItems = [];
+
+// ═══════════════════════════════════════════════
+//  ROLE SELECTION
+// ═══════════════════════════════════════════════
+function selectRole(el) {
+  document.querySelectorAll(".role-card").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  selectedRole = el.dataset.role;
+  document.getElementById("noRoleHint").classList.remove("visible");
+  if (currentDestination) runCheck();
+}
+
+// ═══════════════════════════════════════════════
+//  MAP SETUP
+// ═══════════════════════════════════════════════
+function initMap() {
+  map = L.map("map", { zoomControl: true }).setView(
+    [MAP_DEFAULT.lat, MAP_DEFAULT.lng], MAP_DEFAULT.zoom
+  );
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors © <a href='https://carto.com/attributions'>CARTO</a>",
+    subdomains: "abcd",
+    maxZoom: 19
+  }).addTo(map);
+  map.on("click", e => onMapClick(e.latlng.lat, e.latlng.lng));
+}
+
+const PIN_ICON = L.divIcon({
+  html: `<div style="
+    width:28px;height:36px;
+    background:var(--green);
+    clip-path:polygon(50% 0%,100% 35%,80% 100%,20% 100%,0% 35%);
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    display:flex;align-items:center;justify-content:center;
+    position:relative;">
+    <div style="
+      width:10px;height:10px;
+      background:white;
+      border-radius:50%;
+      position:absolute;
+      top:7px;left:9px;"></div>
+  </div>`,
+  iconSize:[28,36], iconAnchor:[14,36], className:""
+});
+
+function placeMarker(lat, lng) {
+  if (marker) map.removeLayer(marker);
+  marker = L.marker([lat, lng], { icon: PIN_ICON }).addTo(map);
+  map.flyTo([lat, lng], Math.max(map.getZoom(), 6), { duration: 1.2 });
+}
+
+// ═══════════════════════════════════════════════
+//  NOMINATIM
+// ═══════════════════════════════════════════════
+async function geocodeSearch(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+  const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+  return res.json();
+}
+
+async function reverseGeocode(lat, lng) {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+  const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════
+//  SEARCH INPUT HANDLING
+// ═══════════════════════════════════════════════
+function onSearchInput() {
+  const val = document.getElementById("destinationInput").value.trim();
+  document.getElementById("clearBtn").classList.toggle("visible", val.length > 0);
+  clearTimeout(searchTimeout);
+  if (val.length < 2) { closeDropdown(); return; }
+  showDropdownLoading();
+  searchTimeout = setTimeout(() => doSearch(val), NOMINATIM_DELAY_MS);
+}
+
+async function doSearch(query) {
+  try {
+    const results = await geocodeSearch(query);
+    showDropdown(results);
+  } catch(e) { closeDropdown(); }
+}
+
+function showDropdownLoading() {
+  const dd = document.getElementById("autocompleteDropdown");
+  dd.innerHTML = `<div class="autocomplete-item loading"><span class="spinner"></span> Searching…</div>`;
+  dd.classList.add("open");
+  dropdownFocusIdx = -1;
+  currentDropdownItems = [];
+}
+
+function showDropdown(results) {
+  const dd = document.getElementById("autocompleteDropdown");
+  if (!results || !results.length) {
+    dd.innerHTML = `<div class="autocomplete-item loading">No results found.</div>`;
+    dd.classList.add("open");
+    currentDropdownItems = [];
+    return;
+  }
+  currentDropdownItems = results;
+  dd.innerHTML = results.map((r,i) => {
+    const parts = r.display_name.split(",");
+    const name = parts[0].trim();
+    const detail = parts.slice(1,3).join(",").trim();
+    return `<div class="autocomplete-item" data-idx="${i}" onmousedown="selectResult(${i})">
+      <div class="place-name">${name}</div>
+      <div class="place-detail">${detail}</div>
+    </div>`;
+  }).join("");
+  dd.classList.add("open");
+  dropdownFocusIdx = -1;
+}
+
+function closeDropdown() {
+  document.getElementById("autocompleteDropdown").classList.remove("open");
+  currentDropdownItems = [];
+}
+
+function onSearchKeydown(e) {
+  const items = document.querySelectorAll(".autocomplete-item:not(.loading)");
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    dropdownFocusIdx = Math.min(dropdownFocusIdx+1, items.length-1);
+    items.forEach((el,i) => el.classList.toggle("focused", i===dropdownFocusIdx));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    dropdownFocusIdx = Math.max(dropdownFocusIdx-1, -1);
+    items.forEach((el,i) => el.classList.toggle("focused", i===dropdownFocusIdx));
+  } else if (e.key === "Enter") {
+    if (dropdownFocusIdx >= 0 && currentDropdownItems[dropdownFocusIdx]) {
+      selectResult(dropdownFocusIdx);
+    } else if (currentDropdownItems.length > 0) {
+      selectResult(0);
+    }
+  } else if (e.key === "Escape") {
+    closeDropdown();
+  }
+}
+
+function selectResult(idx) {
+  const r = currentDropdownItems[idx];
+  if (!r) return;
+  const displayName = r.display_name;
+  const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+  const country = r.address?.country || "";
+  document.getElementById("destinationInput").value = displayName.split(",").slice(0,2).join(",").trim();
+  document.getElementById("clearBtn").classList.add("visible");
+  closeDropdown();
+  placeMarker(lat, lng);
+  setDestination(lat, lng, displayName, country, r.address || {});
+}
+
+function clearSearch() {
+  document.getElementById("destinationInput").value = "";
+  document.getElementById("clearBtn").classList.remove("visible");
+  closeDropdown();
+  currentDestination = null;
+  if (marker) { map.removeLayer(marker); marker = null; }
+  hideStatus();
+  document.getElementById("destChip").classList.remove("visible");
+}
+
+// ═══════════════════════════════════════════════
+//  MAP CLICK → REVERSE GEOCODE
+// ═══════════════════════════════════════════════
+async function onMapClick(lat, lng) {
+  placeMarker(lat, lng);
+  showStatusLoading();
+  try {
+    const result = await reverseGeocode(lat, lng);
+    const displayName = result.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    const country = result.address?.country || "";
+    const shortName = displayName.split(",").slice(0,2).join(",").trim();
+    document.getElementById("destinationInput").value = shortName;
+    document.getElementById("clearBtn").classList.add("visible");
+    setDestination(lat, lng, displayName, country, result.address || {});
+  } catch(e) {
+    showStatusError();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  DESTINATION & RULES CHECK
+// ═══════════════════════════════════════════════
+function setDestination(lat, lng, displayName, country, addressObj) {
+  currentDestination = { lat, lng, displayName, country, address: addressObj || {} };
+  const chip = document.getElementById("destChip");
+  const chipText = document.getElementById("destChipText");
+  chipText.textContent = displayName.split(",").slice(0,3).join(",").trim();
+  chip.classList.add("visible");
+  runCheck();
+}
+
+// ═══════════════════════════════════════════════
+//  REGION VERIFICATION HELPERS
+// ═══════════════════════════════════════════════
+function normalizeText(s) {
+  return String(s).toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ").trim();
+}
+
+const REGION_STOPWORDS = new Set([
+  "area","areas","within","miles","kilometers","km","border","province","provinces",
+  "the","and","north","south","east","west","parts","region","regions","portions",
+  "including","excludes","does","not","but","some","city","town","from","that",
+  "this","with","have","near","along","also","certain","both","only","where",
+  "which","than","more","less","most","least","between","along","beyond",
+  "district","districts","municipality","municipalities"
+]);
+
+function matchesRegion(addressObj, overpassNames, regionText) {
+  // Collect all address component values from Nominatim + Overpass area names
+  const sources = [
+    ...Object.values(addressObj).filter(v => typeof v === "string"),
+    ...(overpassNames || [])
+  ].map(normalizeText).filter(v => v.length > 2);
+
+  // Tokenize region description — meaningful words only
+  const tokens = normalizeText(regionText)
+    .split(" ")
+    .filter(w => w.length > 3 && !REGION_STOPWORDS.has(w));
+
+  for (const token of tokens) {
+    for (const src of sources) {
+      if (src.includes(token)) return true;
+    }
+  }
+  return false;
+}
+
+async function getAdminAreas(lat, lng) {
+  try {
+    const query = `[out:json][timeout:10];is_in(${lat},${lng})->.a;area.a[name];out;`;
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: "data=" + encodeURIComponent(query)
+    });
+    const data = await res.json();
+    return (data.elements || []).map(e => e.tags?.name).filter(Boolean);
+  } catch(e) {
+    return [];
+  }
+}
+
+function buildAdvisories(specifics, role, addressObj, overpassNames) {
+  // overpassNames===null means "Overpass not yet called" → show spinner
+  // overpassNames===[] means "Overpass returned, no areas found" → unverified
+  return specifics
+    .filter(s => s[role] === "Yes")
+    .map(s => ({
+      ...s,
+      confirmed: overpassNames !== null && matchesRegion(addressObj, overpassNames, s.region),
+      verifying: overpassNames === null
+    }));
+}
+
+function computeStatus(countryNorm, role, advisories) {
+  const matches = window.countryLookup[countryNorm] || [];
+  let status = "ok";
+  for (const m of matches) {
+    if (m[role] === "Yes") { status = "request"; break; }
+  }
+  if (status === "ok" && advisories.length > 0) {
+    // Elevate to 'request' if any advisory is confirmed, else 'regional'
+    status = advisories.some(a => a.confirmed) ? "request" : "regional";
+  }
+  return status;
+}
+
+function runCheck() {
+  if (!currentDestination) return;
+  if (!selectedRole) {
+    hideStatus();
+    document.getElementById("noRoleHint").classList.add("visible");
+    return;
+  }
+  const { lat, lng, address } = currentDestination;
+  const countryNorm = normalizeCountry(currentDestination.country);
+  const role = selectedRole;
+  const specifics = window.specificLookup[countryNorm] || [];
+
+  // Proximity check (same for both phases)
+  const proximityWarnings = [];
+  for (const [cName, coords] of Object.entries(CENTROIDS)) {
+    if (cName === countryNorm) continue;
+    const dist = haversine(lat, lng, coords[0], coords[1]);
+    if (dist <= PROXIMITY_KM) {
+      const nearMatches = window.countryLookup[cName] || [];
+      for (const nm of nearMatches) {
+        if (nm[role] === "Yes") {
+          proximityWarnings.push({ name: nm.country, dist: Math.round(dist) });
+          break;
+        }
+      }
+    }
+  }
+
+  // Phase 1 — immediate: use Nominatim address only (null = Overpass not yet called)
+  const advisories1 = buildAdvisories(specifics, role, address, null);
+  renderResult(computeStatus(countryNorm, role, advisories1), advisories1, proximityWarnings);
+
+  // Phase 2 — async: enrich with Overpass admin areas, then re-render
+  if (specifics.some(s => s[role] === "Yes")) {
+    const snapLat = lat, snapLng = lng, snapRole = role;
+    getAdminAreas(snapLat, snapLng).then(overpassNames => {
+      // Guard: destination may have changed while Overpass was running
+      if (!currentDestination || currentDestination.lat !== snapLat ||
+          currentDestination.lng !== snapLng || selectedRole !== snapRole) return;
+      const advisories2 = buildAdvisories(specifics, role, address, overpassNames);
+      const status2 = computeStatus(countryNorm, role, advisories2);
+      // If page already open (already navigated), just update the warning block in place
+      if (document.getElementById("requestPage").classList.contains("open")) {
+        if (status2 === "request") openRequestPage(advisories2);
+        return;
+      }
+      renderResult(status2, advisories2, proximityWarnings);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  HAVERSINE DISTANCE (km)
+// ═══════════════════════════════════════════════
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER RESULT
+// ═══════════════════════════════════════════════
+function renderResult(status, specificAdvisories, proximityWarnings) {
+  const card = document.getElementById("statusCard");
+  const advisoriesEl = document.getElementById("advisories");
+
+  if (status === "request") {
+    // Navigate to the dedicated request page instead of showing an inline card
+    card.className = "status-card";
+    advisoriesEl.innerHTML = "";
+    advisoriesEl.classList.remove("visible");
+    openRequestPage(specificAdvisories);
+    return;
+  } else if (status === "regional") {
+    card.className = "status-card regional";
+    card.innerHTML = `
+      <div class="regional-band">
+        <span class="regional-band-icon">◉</span>
+        <span class="regional-band-label">Regional Restrictions</span>
+      </div>
+      <div class="regional-inner">
+        <div class="regional-headline">Parts of This Country Require a Request</div>
+        <div class="regional-body">No country-wide restriction applies to your role — but specific regions listed below require a travel request. Confirm your destination does not fall within these areas.</div>
+      </div>`;
+  } else {
+    card.className = "status-card ok";
+    card.innerHTML = `
+      <div class="status-icon">✓</div>
+      <div class="status-title">No Request Required</div>
+      <div class="status-body">This destination does not currently require a pre-travel authorization for your traveller type.</div>`;
+  }
+
+  // Build advisories
+  let advisoryHTML = "";
+
+  if (specificAdvisories.length > 0) {
+    specificAdvisories.forEach(adv => {
+      if (adv.confirmed) {
+        advisoryHTML += `
+          <div class="advisory-item adv-confirmed">
+            <div class="advisory-tag">⚠ Confirmed — Your destination is in this restricted region</div>
+            <div class="advisory-body">${adv.region}</div>
+          </div>`;
+      } else if (adv.verifying) {
+        advisoryHTML += `
+          <div class="advisory-item adv-verifying">
+            <div class="advisory-tag"><span class="spinner-xs"></span> Verifying location…</div>
+            <div class="advisory-body">${adv.region}</div>
+          </div>`;
+      } else {
+        advisoryHTML += `
+          <div class="advisory-item adv-unverified">
+            <div class="advisory-tag">Verify manually — destination not confirmed in this region</div>
+            <div class="advisory-body">${adv.region}</div>
+          </div>`;
+      }
+    });
+  }
+
+  if (proximityWarnings.length > 0) {
+    proximityWarnings.forEach(pw => {
+      advisoryHTML += `
+        <div class="advisory-item proximity">
+          <div class="advisory-tag">📍 Proximity Notice</div>
+          <div class="advisory-body">Your destination is approximately <strong>${pw.dist} km</strong> from <strong>${pw.name}</strong>, which requires a travel request for your role.</div>
+        </div>`;
+    });
+  }
+
+  advisoriesEl.innerHTML = advisoryHTML;
+  advisoriesEl.classList.toggle("visible", advisoryHTML.length > 0);
+}
+
+function showStatusLoading() {
+  const card = document.getElementById("statusCard");
+  card.className = "status-card loading";
+  card.innerHTML = `
+    <div class="status-icon"><span class="spinner"></span></div>
+    <div class="status-title">Checking destination…</div>`;
+  document.getElementById("advisories").classList.remove("visible");
+}
+
+function showStatusError() {
+  const card = document.getElementById("statusCard");
+  card.className = "status-card request";
+  card.innerHTML = `
+    <div class="request-band">
+      <span class="request-band-icon">⚠</span>
+      <span class="request-band-label">Error</span>
+    </div>
+    <div class="request-inner">
+      <div class="request-headline">Could Not Resolve Destination</div>
+      <div class="request-body">Please try typing a destination in the search field instead.</div>
+    </div>`;
+}
+
+function hideStatus() {
+  document.getElementById("statusCard").className = "status-card";
+  document.getElementById("advisories").classList.remove("visible");
+  document.getElementById("destChip").classList.remove("visible");
+}
+
+// Close dropdown when clicking outside
+document.addEventListener("click", e => {
+  if (!e.target.closest(".search-section")) closeDropdown();
+});
+
+// ═══════════════════════════════════════════════
+//  REQUEST PAGE NAVIGATION
+// ═══════════════════════════════════════════════
+const ROLE_LABELS = { undergrad: "Undergraduate Student", grad: "Graduate Student", faculty: "Faculty / Staff" };
+
+function openRequestPage(advisories = []) {
+  const page = document.getElementById("requestPage");
+
+  const dest = currentDestination?.displayName?.split(",").slice(0,3).join(",").trim() || "";
+  const countryName = currentDestination?.country || "";
+  const roleLabel = ROLE_LABELS[selectedRole] || selectedRole || "";
+
+  // Populate warning block
+  document.getElementById("rpWarningDest").textContent =
+    `Destination: ${dest}${countryName ? " · " + countryName : ""}`;
+  const confirmed = advisories.filter(a => a.confirmed);
+  document.getElementById("rpWarningBody").textContent = confirmed.length
+    ? "A restricted region has been confirmed at your destination. A pre-travel authorization request must be submitted before this trip."
+    : "This destination requires a pre-travel authorization request based on your traveller type.";
+
+  // Restricted regions list
+  const regionsEl = document.getElementById("rpWarningRegions");
+  if (advisories.length > 0) {
+    regionsEl.innerHTML = '<div class="rp-warning-regions">' +
+      advisories.map(a => `
+        <div class="rp-warning-region-item">
+          <div class="region-tag">${a.confirmed ? "⚠ Confirmed restricted region" : "Flagged region"}</div>
+          ${a.region}
+        </div>`).join("") + "</div>";
+  } else {
+    regionsEl.innerHTML = "";
+  }
+
+  // Pre-fill form
+  document.getElementById("requestForm").style.display = "";
+  document.getElementById("rpConfirmation").style.display = "none";
+  document.getElementById("requestForm").reset();
+  document.getElementById("rp-destination").value = dest;
+  document.getElementById("rp-role-display").value = roleLabel;
+
+  page.setAttribute("aria-hidden", "false");
+  page.classList.add("open");
+  page.scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+function closeRequestPage() {
+  const page = document.getElementById("requestPage");
+  page.classList.remove("open");
+  page.setAttribute("aria-hidden","true");
+  document.body.style.overflow = "";
+}
+
+function submitRequestForm(e) {
+  e.preventDefault();
+  document.getElementById("requestForm").style.display = "none";
+  document.getElementById("rpConfirmation").style.display = "block";
+  document.getElementById("requestPage").scrollTop = 0;
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+buildLookups();
+initMap();
+</script>
+</body>
+</html>
